@@ -162,7 +162,7 @@ public E get(int index) {
 
 ## 链表
 
-### 底层数据结构
+### 1. 底层数据结构
 
 ```java
 private static class Node<E> {
@@ -178,7 +178,7 @@ private static class Node<E> {
 }
 ```
 
-### 增删改查操作
+### 2. 增删改查操作
 
 **增加：**
 
@@ -253,5 +253,108 @@ private E unlinkLast(Node<E> l) {
     size--;
     modCount++;
     return element;
+}
+```
+
+## 优先队列PriorityQueue
+
+### 1. 底层数据结构
+
+数组，默认大小为11
+
+```java
+transient Object[] queue;
+public PriorityQueue() {
+    this(DEFAULT_INITIAL_CAPACITY, null);
+}
+public PriorityQueue(int initialCapacity,
+                        Comparator<? super E> comparator) {
+    // Note: This restriction of at least one is not actually needed,
+    // but continues for 1.5 compatibility
+    if (initialCapacity < 1)
+        throw new IllegalArgumentException();
+    this.queue = new Object[initialCapacity];
+    this.comparator = comparator;
+}
+```
+
+### 2. 出队入队操作
+
+**入队：**
+
+从源码上看PriorityQueue的入列操作并没对所有加入的元素进行优先级排序。仅仅保证数组第一个元素是最小的。
+
+```java
+public boolean offer(E e) {
+    if (e == null)
+        throw new NullPointerException();
+    modCount++;
+    int i = size;
+    if (i >= queue.length)
+        grow(i + 1);
+    size = i + 1;
+    if (i == 0)
+        queue[0] = e;
+    else
+        siftUp(i, e);
+    return true;
+}
+private void siftUp(int k, E x) {
+    if (comparator != null)
+        siftUpUsingComparator(k, x);
+    else
+        siftUpComparable(k, x);
+}
+private void siftUpUsingComparator(int k, E x) {
+    while (k > 0) {
+        int parent = (k - 1) >>> 1;
+        Object e = queue[parent];
+        if (comparator.compare(x, (E) e) >= 0)
+            break;
+        queue[k] = e;
+        k = parent;
+    }
+    queue[k] = x;
+}
+```
+
+**出队：**
+
+上面源码，当第一个元素出列之后，对剩下的元素进行再排序，挑选出最小的元素排在数组第一个位置。
+
+```java
+public E poll() {
+    if (size == 0)
+        return null;
+    int s = --size;
+    modCount++;
+    E result = (E) queue[0];
+    E x = (E) queue[s];
+    queue[s] = null;
+    if (s != 0)
+        siftDown(0, x);
+    return result;
+}
+private void siftDown(int k, E x) {
+    if (comparator != null)
+        siftDownUsingComparator(k, x);
+    else
+        siftDownComparable(k, x);
+}
+private void siftDownUsingComparator(int k, E x) {
+    int half = size >>> 1;
+    while (k < half) {
+        int child = (k << 1) + 1;
+        Object c = queue[child];
+        int right = child + 1;
+        if (right < size &&
+            comparator.compare((E) c, (E) queue[right]) > 0)
+            c = queue[child = right];
+        if (comparator.compare(x, (E) c) <= 0)
+            break;
+        queue[k] = c;
+        k = child;
+    }
+    queue[k] = x;
 }
 ```
